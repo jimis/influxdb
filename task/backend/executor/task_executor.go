@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -108,10 +109,11 @@ func (e *TaskExecutor) Execute(ctx context.Context, id scheduler.ID, scheduledAt
 // We then start a worker to work the newly queued jobs.
 func (e *TaskExecutor) PromisedExecute(ctx context.Context, id scheduler.ID, scheduledAt time.Time) (Promise, error) {
 	iid := influxdb.ID(id)
-
+	log.Println(id, scheduledAt)
 	// create a run
 	p, err := e.createRun(ctx, iid, scheduledAt)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 
@@ -128,7 +130,7 @@ func (e *TaskExecutor) ManualRun(ctx context.Context, id influxdb.ID, runID infl
 	p, err := e.createPromise(ctx, r)
 
 	e.startWorker()
-	e.metrics.manualRunsCounter.WithLabelValues(string(id)).Inc()
+	e.metrics.manualRunsCounter.WithLabelValues(id.String()).Inc()
 	return p, err
 }
 
@@ -147,7 +149,7 @@ func (e *TaskExecutor) ResumeCurrentRun(ctx context.Context, id influxdb.ID, run
 			p, err := e.createPromise(ctx, run)
 
 			e.startWorker()
-			e.metrics.resumeRunsCounter.WithLabelValues(string(id)).Inc()
+			e.metrics.resumeRunsCounter.WithLabelValues(id.String()).Inc()
 			return p, err
 		}
 	}
@@ -314,6 +316,7 @@ func (w *worker) start(p *promise) {
 }
 
 func (w *worker) finish(p *promise, rs backend.RunStatus, err error) {
+
 	// trace
 	span, ctx := tracing.StartSpanFromContext(p.ctx)
 	defer span.Finish()
@@ -326,8 +329,6 @@ func (w *worker) finish(p *promise, rs backend.RunStatus, err error) {
 	// add to metrics
 	rd := time.Since(p.run.StartedAt)
 	w.te.metrics.FinishRun(p.task, rs, rd)
-
-	w.te.tcs.FinishRun(ctx, p.task.ID, p.run.ID)
 
 	// log error
 	if err != nil {
@@ -351,6 +352,7 @@ func (w *worker) finish(p *promise, rs backend.RunStatus, err error) {
 	} else {
 		w.te.logger.Debug("Completed successfully", zap.String("taskID", p.task.ID.String()))
 	}
+
 }
 
 func (w *worker) executeQuery(p *promise) {

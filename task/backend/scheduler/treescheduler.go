@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"log"
 	"sync"
 	"time"
 
@@ -311,6 +312,7 @@ func (s *TreeScheduler) work(ctx context.Context, ch chan Item) {
 					err = &ErrUnrecoverable{errors.New("executor panicked")}
 				}
 			}()
+			log.Println(it.id, t)
 			return s.executor.Execute(ctx, it.id, t)
 		}()
 		if err != nil {
@@ -334,8 +336,11 @@ func (s *TreeScheduler) Schedule(sch Schedulable) error {
 	}
 	nt, err := it.cron.Next(sch.LastScheduled())
 	if err != nil {
+		s.sm.scheduleFail(it.id)
+		s.onErr(context.Background(), it.id, time.Time{}, err)
 		return err
 	}
+	log.Println(nt)
 	it.next = nt.UTC().Unix()
 	it.ordering.when = it.next + it.Offset
 

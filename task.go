@@ -64,6 +64,36 @@ func (t *Task) EffectiveCron() string {
 	return ""
 }
 
+// TaskEffectiveCron returns the effective cron string of the options
+// If the cron option was specified, it is returned.
+// If the every option was specified, it is converted into a cron string using by taking the largest duration and setting it to run at that interval
+// Otherwise, the empty string is returned.
+// The value of the offset option is not considered.
+// TODO(docmerlin): when we switch completely to the new scheduler, rename this as EffectiveCron and delete the current
+//  EffectiveCron method
+func (t *Task) TaskEffectiveCron() string {
+	if t.Cron != "" {
+		return t.Cron
+	}
+
+	if t.Every != "" {
+		d := []time.Duration{time.Hour, time.Minute, time.Second}
+		dt, err := time.ParseDuration(t.Every)
+		ts := [3]int{1, 1, 1}
+		for i := range d {
+			if err != nil {
+				return ""
+			}
+			res := int(float64(dt) / float64(d[i]))
+			if res > 1 {
+				ts[2-i] = res
+			}
+		}
+		return fmt.Sprintf("*/%d */%d */%d * * * *", ts[0], ts[1], ts[2])
+	}
+	return ""
+}
+
 // LatestCompletedTime gives the time.Time that the task was last queued to be run in RFC3339 format.
 func (t *Task) LatestCompletedTime() (time.Time, error) {
 	tm := t.LatestCompleted

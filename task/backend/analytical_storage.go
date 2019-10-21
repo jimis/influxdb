@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/influxdata/flux"
@@ -193,7 +194,7 @@ func (as *AnalyticalStorage) FindRuns(ctx context.Context, filter influxdb.RunFi
 	if err := ittr.Err(); err != nil {
 		return nil, 0, fmt.Errorf("unexpected internal error while decoding run response: %v", err)
 	}
-
+	log.Println("runslen:", len(runs), len(re.runs))
 	runs = as.combineRuns(runs, re.runs)
 
 	return runs, len(runs), err
@@ -205,15 +206,17 @@ func (as *AnalyticalStorage) combineRuns(currentRuns, completeRuns []*influxdb.R
 
 	// track the current runs
 	for i, cr := range currentRuns {
+		fmt.Println("curr", currentRuns[i].StartedAt, currentRuns[i].ScheduledFor)
 		crMap[cr.ID] = i
 	}
 
 	// if we find a complete run that matches a current run the current run is out dated and
 	// should be removed.
-	for _, completeRun := range completeRuns {
+	for j, completeRun := range completeRuns {
 		if i, ok := crMap[completeRun.ID]; ok {
-			currentRuns = append(currentRuns[:i], currentRuns[i+1:]...)
+			currentRuns = append(completeRuns[:i], completeRuns[i+1:]...)
 		}
+		fmt.Println("cr", completeRuns[j].StartedAt, completeRuns[j].ScheduledFor)
 	}
 
 	return append(currentRuns, completeRuns...)
