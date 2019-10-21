@@ -1135,32 +1135,7 @@ func (e *Engine) compactFull(ctx context.Context, grp CompactionGroup, wg *sync.
 			return false
 		}
 
-		done := make(chan struct{}) // Closed when compaction finished.
-		go func(lease influxdb.Lease) {
-			ttl, err := lease.TTL(ctx)
-			if err != nil {
-				e.logger.Warn("unable to get TTL for lease on semaphore", zap.Error(err))
-				ttl = influxdb.DefaultLeaseTTL // This is probably a reasonable fallback.
-			}
-
-			// Renew the lease when ttl is halved
-			ticker := time.NewTicker(ttl / 2)
-			for {
-				select {
-				case <-done:
-					if err := lease.Release(ctx); err != nil {
-						e.logger.Warn("Lease on sempahore was not released", zap.Error(err))
-					}
-					return
-				case <-ticker.C:
-					if err := lease.KeepAlive(ctx); err != nil {
-						e.logger.Warn("Unable to extend lease", zap.Error(err))
-					} else {
-						e.logger.Info("Extended lease on semaphore")
-					}
-				}
-			}
-		}(lease)
+		done := e.monitorLease(ctx, lease) // Closed when compaction finished.
 
 		e.compactionTracker.IncFullActive()
 		wg.Add(1)
@@ -1180,6 +1155,39 @@ func (e *Engine) compactFull(ctx context.Context, grp CompactionGroup, wg *sync.
 		return true
 	}
 	return false
+}
+
+// monitorLease initialises a goroutine that keeps a lease alive until the
+// returned channel is closed.
+func (e *Engine) monitorLease(ctx context.Context, lease influxdb.Lease) chan struct{} {
+	done := make(chan struct{})
+	go func(lease influxdb.Lease) {
+		ttl, err := lease.TTL(ctx)
+		if err != nil {
+			e.logger.Warn("unable to get TTL for lease on semaphore", zap.Error(err))
+			ttl = influxdb.DefaultLeaseTTL // This is probably a reasonable fallback.
+		}
+
+		// Renew the lease when ttl is halved
+		ticker := time.NewTicker(ttl / 2)
+		for {
+			select {
+			case <-done:
+				ticker.Stop()
+				if err := lease.Release(ctx); err != nil {
+					e.logger.Warn("Lease on sempahore was not released", zap.Error(err))
+				}
+				return
+			case <-ticker.C:
+				if err := lease.KeepAlive(ctx); err != nil {
+					e.logger.Warn("Unable to extend lease", zap.Error(err))
+				} else {
+					e.logger.Info("Extended lease on semaphore")
+				}
+			}
+		}
+	}(lease)
+	return done
 }
 
 // compactionStrategy holds the details of what to do in a compaction.
