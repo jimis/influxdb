@@ -117,6 +117,7 @@ type CheckFilter struct {
 	Name  *string
 	OrgID *ID
 	Org   *string
+	UserResourceMappingFilter
 }
 
 // QueryParams Converts CheckFilter fields to url query params.
