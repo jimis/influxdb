@@ -2,7 +2,7 @@
 
 The code under this directory is organized in the go submodule `github.com/influxdata/promqltests`.
 This was made as a go submodule to avoid bringing unnecessary dependencies into InfluxDB.
-This module is _not_ intended to be exported and used by other modules.
+This module is _not_ intended to be exported and used by other modules, as such, every file is in the `internal` folder.
 
 This module contains end-to-end tests for PromQL.
 Those tests compare the results of a PromQL query against a Prometheus database to the results of a Flux query (transpiled from the PromQL one) against InfluxDB.

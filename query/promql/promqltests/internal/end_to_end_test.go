@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	_ "github.com/influxdata/influxdb/query/builtin"
-	"github.com/influxdata/promqltests"
+	"github.com/influxdata/promqltests/internal"
 )
 
 func TestPromQLEndToEnd(t *testing.T) {
