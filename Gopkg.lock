@@ -68,11 +68,13 @@
   revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
 
 [[projects]]
-  digest = "1:8351fe2c28d2476ebfb708202bbf746246264d23c492c9bbb4bb3f579ad04477"
+  digest = "1:256a41ff97063f4b179004d214e6575709190d27f36f98cb60b7c42bd5ae59f0"
   name = "github.com/apache/arrow"
   packages = [
     "go/arrow",
     "go/arrow/array",
+    "go/arrow/decimal128",
+    "go/arrow/float16",
     "go/arrow/internal/bitutil",
     "go/arrow/internal/cpu",
     "go/arrow/internal/debug",
@@ -80,7 +82,7 @@
     "go/arrow/memory",
   ]
   pruneopts = "UT"
-  revision = "338c62a2a20574072fde5c478fcd42bf27a2d4b6"
+  revision = "b98a560fc5619a7bd0dcc47a94de5f4419937701"
 
 [[projects]]
   branch = "master"

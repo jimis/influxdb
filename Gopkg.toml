@@ -76,7 +76,7 @@
 
 [[constraint]]
   name = "github.com/apache/arrow"
-  revision = "338c62a2a20574072fde5c478fcd42bf27a2d4b6"
+  revision = "b98a560fc5619a7bd0dcc47a94de5f4419937701"
 
 [[constraint]]
   name = "github.com/influxdata/influxql"
